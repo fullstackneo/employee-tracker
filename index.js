@@ -1,6 +1,7 @@
 const inquirer = require('inquirer');
-const db = require('./db/connection');
-const { viewDepartments, viewRoles, viewEmployees, addDepartment, addRole, addEmployee, updateRole } = require('./utils/actionDB');
+const { viewDepartments, addDepartment, removeDepartment, totalBudget } = require('./utils/department');
+const { viewRoles, addRole, removeRole } = require('./utils/role');
+const { viewEmployees, addEmployee, updateRole, viewByDepartment, viewByManager, removeEmployee, updateManager } = require('./utils/employee');
 
 const executeChoice = choice => {
   switch (choice['to-do'].split('.')[0]) {
@@ -23,7 +24,7 @@ const executeChoice = choice => {
   }
 };
 
-const makeChoice = () => {
+const start = () => {
   return inquirer
     .prompt([
       {
@@ -34,7 +35,7 @@ const makeChoice = () => {
       },
     ])
     .then(executeChoice)
-    .then(makeChoice);
+    .then(start);
 };
 
-makeChoice();
+start();
