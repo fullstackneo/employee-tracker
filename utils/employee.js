@@ -24,11 +24,134 @@ const viewEmployees = () => {
     });
 };
 
-const viewByDepartment = () => {};
+const viewByDepartment = async () => {
+  const sql = `
+  SELECT
+    employees.id,
+    employees.first_name,
+    employees.last_name,
+    roles.title,
+    roles.salary,
+    departments.name AS department,
+    employees.manager
+  FROM
+    employees
+    LEFT JOIN roles ON employees.role_id = roles.id
+    LEFT JOIN departments ON roles.department_id = departments.id
+  WHERE
+    departments.name = ?
+  `;
 
-const viewByManager = () => {};
+  const [departmentRows] = await db.promise().execute({
+    sql: `
+    SELECT
+      departments.name
+    FROM
+      departments
+    ORDER BY
+      id
+    `,
+    rowsAsArray: true,
+  });
+  departmentList = departmentRows.map(el => el[0]);
 
-const removeEmployee = () => {};
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'department',
+        message: 'Which department would you like to choose?',
+        choices: departmentList,
+      },
+    ])
+    .then(({ department }) =>
+      db
+        .promise()
+        .execute(sql, [department])
+        .then(([rows, fields]) => {
+          console.table(rows);
+        })
+    );
+};
+
+const viewByManager = async () => {
+  const sql = `
+  SELECT
+    employees.id,
+    employees.first_name,
+    employees.last_name,
+    roles.title,
+    roles.salary,
+    departments.name AS department,
+    employees.manager
+  FROM
+    employees
+    LEFT JOIN roles ON employees.role_id = roles.id
+    LEFT JOIN departments ON roles.department_id = departments.id
+  WHERE
+    employees.manager = ?
+  `;
+
+  const [managerRows] = await db.promise().execute({
+    sql: `
+    SELECT
+      employees.manager
+    FROM
+      employees
+    WHERE
+      manager IS NOT NULL
+    GROUP BY
+      manager
+    `,
+    rowsAsArray: true,
+  });
+  managerList = managerRows.map(el => el[0]);
+
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'manager',
+        message: 'Which manager would you like to choose?',
+        choices: managerList,
+      },
+    ])
+    .then(({ manager }) =>
+      db
+        .promise()
+        .execute(sql, [manager])
+        .then(([rows, fields]) => {
+          console.table(rows);
+        })
+    );
+};
+
+const removeEmployee = async () => {
+  const [employeeRows] = await db.promise().execute({ sql: `SELECT employees.first_name, employees.last_name ,employees.id FROM employees ORDER BY id`, rowsAsArray: true });
+  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
+
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'employee',
+        message: `Which employee do you want to remove?`,
+        choices: employeeList,
+      },
+    ])
+    .then(({ employee }) => {
+      const employee_id = employee.split(':')[1].replace(')', '');
+      const sql = `DELETE FROM employees WHERE id=?`;
+      return db
+        .promise()
+        .execute(sql, [employee_id])
+        .then(([result]) => {
+          if (result.affectedRows === 1) {
+            console.log(`Removed ${employee.split('(')[0].trim()} from database!`);
+          }
+        });
+    });
+};
 
 const addEmployee = async () => {
   const [employeeRows] = await db.promise().execute({ sql: `SELECT employees.first_name, employees.last_name FROM employees ORDER BY id`, rowsAsArray: true });
@@ -93,11 +216,12 @@ const addEmployee = async () => {
 };
 
 const updateRole = async () => {
-  const [employeeRows] = await db.promise().execute({ sql: `SELECT employees.first_name, employees.last_name FROM employees ORDER BY id`, rowsAsArray: true });
-  let employeeList = employeeRows.map(el => el.join(' '));
+  const [employeeRows] = await db.promise().execute({ sql: `SELECT first_name, last_name,id FROM employees ORDER BY id`, rowsAsArray: true });
+
+  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
+
   const [roleRows] = await db.promise().execute(`SELECT roles.title FROM roles ORDER BY id`);
   let roleList = roleRows.map(el => el.title);
-  console.log(roleList);
 
   return inquirer
     .prompt([
@@ -114,13 +238,13 @@ const updateRole = async () => {
         choices: roleList,
       },
     ])
-    .then(({ employee, role }) => {
-      const employee_id = employeeList.indexOf(employee) + 1;
-      const role_id = roleList.indexOf(role) + 1;
-      const sql = `Update employees set role_id=? WHERE id=?`;
+    .then(async ({ employee, role }) => {
+      const employee_id = employee.split(':')[1].replace(')', '');
+      const [[{ id: role_id }]] = await db.promise().execute(`SELECT id FROM roles WHERE title=?`, [role]);
+      const sql = `Update employees SET role_id=? WHERE id=?`;
       return db
         .promise()
-        .execute(sql,[role_id,employee_id])
+        .execute(sql, [role_id, employee_id])
         .then(([result]) => {
           if (result.affectedRows === 1) {
             console.log(`Updated ${employee}'s role to ${role}!`);
@@ -129,10 +253,48 @@ const updateRole = async () => {
     });
 };
 
-const updateManager = () => {};
+const updateManager = async () => {
+  const [employeeRows] = await db.promise().execute({ sql: `SELECT first_name, last_name,id FROM employees ORDER BY id`, rowsAsArray: true });
+  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
 
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'employee',
+        message: `Which employee's manager do you want to update?`,
+        choices: employeeList,
+      },
+      {
+        type: 'list',
+        name: 'manager',
+        message: `Which employee do you want to assign as the manager?`,
+        choices: employeeList,
+      },
+    ])
+    .then(async ({ employee, manager }) => {
+      const employee_id = employee.split(':')[1].replace(')', '');
+      const employee_name = employee.split('(')[0].trim();
+      const manager_name = manager.split('(')[0].trim();
+      const sql = `Update employees SET manager=? WHERE id=?`;
+      return db
+        .promise()
+        .execute(sql, [manager_name, employee_id])
+        .then(([result]) => {
+          if (result.affectedRows === 1) {
+            console.log(`Updated ${employee_name}'s manager to ${manager_name} !`);
+          }
+        });
+    });
+};
+
+updateManager();
 module.exports = {
   viewEmployees,
+  viewByDepartment,
+  viewByManager,
   addEmployee,
+  updateManager,
   updateRole,
+  removeEmployee,
 };
