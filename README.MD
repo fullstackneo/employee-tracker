@@ -6,7 +6,7 @@
 
 ## Demo
 
-[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://youtu.be/vt5fpE0bzSY)
+[![Watch the video](https://github.com/fullstackneo/employee-tracker/blob/main/assets/screenshot/screenshot.jpg)](https://drive.google.com/file/d/1rHymKJOEV2SwMCEEaybouQhHWaHMmRA0/view)
 
 ## Link
 
