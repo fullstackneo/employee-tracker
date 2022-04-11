@@ -3,6 +3,7 @@ const { viewDepartments, addDepartment, removeDepartment, totalBudget } = requir
 const { viewRoles, addRole, removeRole } = require('./utils/role');
 const { viewEmployees, addEmployee, updateRole, viewByDepartment, viewByManager, removeEmployee, updateManager } = require('./utils/employee');
 
+// execute the choice made by user 
 const executeChoice = choice => {
   switch (choice['to-do'].split('.')[0]) {
     case '1':
@@ -38,6 +39,7 @@ const executeChoice = choice => {
   }
 };
 
+// initialize the app 
 const start = () => {
   return inquirer
     .prompt([

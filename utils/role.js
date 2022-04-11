@@ -2,10 +2,12 @@ const inquirer = require('inquirer');
 const Role = require('../lib/Role');
 const Department = require('../lib/Department');
 
+// view all roles 
 const viewRoles = async () => {
   await Role.printRoles();
 };
 
+// add new role 
 const addRole = async () => {
   const departmentList = await Department.getList();
   return inquirer
@@ -46,6 +48,7 @@ const addRole = async () => {
     .then(({ role, salary, department }) => Role.add(role, salary, department));
 };
 
+// remove role 
 const removeRole = async () => {
   const roleList = await Role.getList();
   return inquirer

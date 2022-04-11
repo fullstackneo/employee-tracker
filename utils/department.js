@@ -1,15 +1,18 @@
 const inquirer = require('inquirer');
 const Department = require('../lib/Department');
 
+// view all deparments
 const viewDepartments = async () => {
   await Department.printList();
 };
 
+// view department budget
 const totalBudget = async () => {
   const totalBudget = await Department.totalBudget();
   console.log(`Total budget is ${totalBudget}`);
 };
 
+// add department
 const addDepartment = () => {
   return inquirer
     .prompt([
@@ -30,6 +33,7 @@ const addDepartment = () => {
     .then(({ department }) => Department.add(department));
 };
 
+// remove department 
 const removeDepartment = async () => {
   const departmentList = await Department.getList();
   return inquirer
