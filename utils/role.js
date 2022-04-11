@@ -1,10 +1,9 @@
-
 const inquirer = require('inquirer');
 const Role = require('../lib/Role');
 const Department = require('../lib/Department');
 
 const viewRoles = async () => {
-  await printRoles();
+  await Role.printRoles();
 };
 
 const addRole = async () => {

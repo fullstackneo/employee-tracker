@@ -6,7 +6,7 @@ const viewDepartments = async () => {
 };
 
 const totalBudget = async () => {
-  const totalBudget = Department.totalBudget();
+  const totalBudget = await Department.totalBudget();
   console.log(`Total budget is ${totalBudget}`);
 };
 

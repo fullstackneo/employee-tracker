@@ -33,7 +33,7 @@ const viewByManager = async () => {
         choices: managerList,
       },
     ])
-    .then(({ manager }) => Employee.sortByManager(manager));
+    .then(({ manager }) => Employee.printByManager(manager));
 };
 
 const removeEmployee = async () => {
