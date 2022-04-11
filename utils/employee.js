@@ -3,12 +3,12 @@ const Department = require('../lib/Department');
 const Role = require('../lib/Role');
 const Employee = require('../lib/Employee');
 
-// view all employees 
+// view all employees
 const viewEmployees = async () => {
   await Employee.printEmployee();
 };
 
-// view all employee by department 
+// view all employee by department
 const viewByDepartment = async () => {
   departmentList = await Department.getList();
   return inquirer
@@ -23,7 +23,7 @@ const viewByDepartment = async () => {
     .then(({ department }) => Employee.printByDepartment(department));
 };
 
-// view all employee by manager 
+// view all employee by manager
 const viewByManager = async () => {
   const managerList = await Employee.getManagerList();
   return inquirer
@@ -38,7 +38,7 @@ const viewByManager = async () => {
     .then(({ manager }) => Employee.printByManager(manager));
 };
 
-// remove employee 
+// remove employee
 const removeEmployee = async () => {
   const employeeList = await Employee.getList('id');
 
@@ -57,7 +57,7 @@ const removeEmployee = async () => {
     });
 };
 
-// add employee 
+// add employee
 const addEmployee = async () => {
   const roleList = await Role.getList();
   const employeeList = await Employee.getList('name');
@@ -104,11 +104,12 @@ const addEmployee = async () => {
     ])
     .then(async ({ first_name, last_name, role, manager }) => {
       const role_id = await Role.getId(role);
-      await Employee.addEmployee(first_name, last_name, role_id, manager);
+      const newEmployee = new Employee(first_name, last_name, role_id, manager);
+      await Employee.addEmployee(newEmployee);
     });
 };
 
-// update employee's role 
+// update employee's role
 const updateRole = async () => {
   const employeeList = await Employee.getList('id');
   const roleList = await Role.getList();
