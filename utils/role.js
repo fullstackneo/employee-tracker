@@ -74,8 +74,33 @@ const addRole = async () => {
     });
 };
 
-const removeRole = () => {};
+const removeRole = async () => {
+  const [roleRows] = await db.promise().execute({ sql: `SELECT title FROM roles ORDER BY id`, rowsAsArray: true });
+  const roleList = roleRows.map(el => el[0]);
+  const sql = `DELETE FROM roles WHERE title=?`;
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'role',
+        message: 'Which role do you want to remove?',
+        choices: roleList,
+      },
+    ])
+    .then(({ role }) => {
+      db.promise()
+        .execute(sql, [role])
+        .then(([result]) => {
+          if (result.affectedRows === 1) {
+            console.log(`Removed ${role} from database!`);
+          }
+        });
+    });
+};
+
+removeRole();
 module.exports = {
   viewRoles,
   addRole,
+  removeRole,
 };

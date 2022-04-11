@@ -18,7 +18,30 @@ const viewDepartments = () => {
     });
 };
 
-const totalBudget = () => {};
+const totalBudget = async () => {
+  const [salaryRows] = await db.promise().execute({
+    sql: `
+    SELECT
+      count(roles.salary),
+      roles.salary
+    FROM
+     employees
+    LEFT JOIN 
+      roles 
+    ON 
+      employees.role_id = roles.id
+    WHERE
+      role_id IS NOT NULL
+    GROUP BY
+      salary    
+    `,
+    rowsAsArray: true,
+  });
+  let salaryList = salaryRows.map(el => el[0] * el[1]);
+  let totalBudget = 0;
+  salaryList.forEach(el => (totalBudget += el));
+  console.log(`Total budget is ${totalBudget}`);
+};
 
 const addDepartment = () => {
   return inquirer
@@ -41,7 +64,7 @@ const addDepartment = () => {
       const sql = `INSERT IGNORE INTO departments(name) VALUES (?)`;
       return db
         .promise()
-        .execute(sql,[department])
+        .execute(sql, [department])
         .then(([result]) => {
           if (result.affectedRows === 1) {
             console.log('Added new department to database!');
@@ -49,9 +72,33 @@ const addDepartment = () => {
         });
     });
 };
-const removeDepartment = () => {};
+const removeDepartment = async () => {
+  const [rows] = await db.promise().execute(`SELECT departments.name FROM departments ORDER BY id`);
+  const departmentList = rows.map(el => el.name);
+  const sql = `DELETE FROM departments WHERE name=?`;
+  return inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'department',
+        message: 'Which department do you want to remove?',
+        choices: departmentList,
+      },
+    ])
+    .then(({ department }) => {
+      db.promise()
+        .execute(sql, [department])
+        .then(([result]) => {
+          if (result.affectedRows === 1) {
+            console.log(`Removed ${department} from database!`);
+          }
+        });
+    });
+};
 
 module.exports = {
   viewDepartments,
   addDepartment,
+  removeDepartment,
+  totalBudget,
 };

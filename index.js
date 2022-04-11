@@ -12,14 +12,28 @@ const executeChoice = choice => {
     case '3':
       return viewEmployees();
     case '4':
-      return addDepartment();
+      return viewByDepartment();
     case '5':
-      return addRole();
+      return viewByManager();
     case '6':
-      return addEmployee();
+      return addDepartment();
     case '7':
-      return updateRole();
+      return addRole();
     case '8':
+      return addEmployee();
+    case '9':
+      return removeDepartment();
+    case '10':
+      return removeRole();
+    case '11':
+      return removeEmployee();
+    case '12':
+      return updateRole();
+    case '13':
+      return updateManager();
+    case '14':
+      return totalBudget();
+    case '15':
       process.exit();
   }
 };
@@ -31,7 +45,7 @@ const start = () => {
         type: 'list',
         name: 'to-do',
         message: 'What would you like to do?',
-        choices: ['1.View all departments', '2.View all roles', '3.View all employees', '4.Add a department', '5.Add a role', '6.Add a employee', '7.Update an employee role', '8.exit'],
+        choices: ['1.View all departments', '2.View all roles', '3.View all employees', '4.View employees by department', '5.View employees by manager', '6.Add a department', '7.Add a role', '8.Add an employee', '9.Remove department', '10.Remove role', '11.Remove Employee', `12.Update employee's role`, `13.Update employee's manager`, '14.View total budget', '15.exit'],
       },
     ])
     .then(executeChoice)
