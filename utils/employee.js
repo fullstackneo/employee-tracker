@@ -1,60 +1,15 @@
-const db = require('../db/connection');
 const inquirer = require('inquirer');
+const Department = require('../lib/Department');
+const Role = require('../lib/Role');
+const Employee = require('../lib/Employee');
 
-const viewEmployees = () => {
-  const sql = `
-  SELECT
-    employees.id,
-    employees.first_name,
-    employees.last_name,
-    roles.title,
-    roles.salary,
-    departments.name AS department,
-    employees.manager
-  FROM
-    employees
-    LEFT JOIN roles ON employees.role_id = roles.id
-    LEFT JOIN departments ON roles.department_id = departments.id
-  `;
-  return db
-    .promise()
-    .execute(sql)
-    .then(([rows, fields]) => {
-      console.table(rows);
-    });
+
+const viewEmployees = async () => {
+  await Employee.printEmployee();
 };
 
 const viewByDepartment = async () => {
-  const sql = `
-  SELECT
-    employees.id,
-    employees.first_name,
-    employees.last_name,
-    roles.title,
-    roles.salary,
-    departments.name AS department,
-    employees.manager
-  FROM
-    employees
-    LEFT JOIN roles ON employees.role_id = roles.id
-    LEFT JOIN departments ON roles.department_id = departments.id
-  WHERE
-    departments.name = ?
-  `;
-
-  const [departmentRows] = await db.promise().execute({
-    sql: `
-    SELECT
-      departments.name
-    FROM
-      departments
-    ORDER BY
-      id
-    `,
-    rowsAsArray: true,
-  });
-  departmentList = departmentRows.map(el => el[0]);
-
+  departmentList = await Department.getList();
   return inquirer
     .prompt([
       {
@@ -64,49 +19,11 @@ const viewByDepartment = async () => {
         choices: departmentList,
       },
     ])
-    .then(({ department }) =>
-      db
-        .promise()
-        .execute(sql, [department])
-        .then(([rows, fields]) => {
-          console.table(rows);
-        })
-    );
+    .then(({ department }) => Employee.printByDepartment(department));
 };
 
 const viewByManager = async () => {
-  const sql = `
-  SELECT
-    employees.id,
-    employees.first_name,
-    employees.last_name,
-    roles.title,
-    roles.salary,
-    departments.name AS department,
-    employees.manager
-  FROM
-    employees
-    LEFT JOIN roles ON employees.role_id = roles.id
-    LEFT JOIN departments ON roles.department_id = departments.id
-  WHERE
-    employees.manager = ?
-  `;
-
-  const [managerRows] = await db.promise().execute({
-    sql: `
-    SELECT
-      employees.manager
-    FROM
-      employees
-    WHERE
-      manager IS NOT NULL
-    GROUP BY
-      manager
-    `,
-    rowsAsArray: true,
-  });
-  managerList = managerRows.map(el => el[0]);
-
+  const managerList = await Employee.getManagerList();
   return inquirer
     .prompt([
       {
@@ -116,19 +33,11 @@ const viewByManager = async () => {
         choices: managerList,
       },
     ])
-    .then(({ manager }) =>
-      db
-        .promise()
-        .execute(sql, [manager])
-        .then(([rows, fields]) => {
-          console.table(rows);
-        })
-    );
+    .then(({ manager }) => Employee.sortByManager(manager));
 };
 
 const removeEmployee = async () => {
-  const [employeeRows] = await db.promise().execute({ sql: `SELECT employees.first_name, employees.last_name ,employees.id FROM employees ORDER BY id`, rowsAsArray: true });
-  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
+  const employeeList = await Employee.getList('id');
 
   return inquirer
     .prompt([
@@ -139,25 +48,15 @@ const removeEmployee = async () => {
         choices: employeeList,
       },
     ])
-    .then(({ employee }) => {
+    .then(async ({ employee }) => {
       const employee_id = employee.split(':')[1].replace(')', '');
-      const sql = `DELETE FROM employees WHERE id=?`;
-      return db
-        .promise()
-        .execute(sql, [employee_id])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log(`Removed ${employee.split('(')[0].trim()} from database!`);
-          }
-        });
+      await Employee.removeById(employee_id);
     });
 };
 
 const addEmployee = async () => {
-  const [employeeRows] = await db.promise().execute({ sql: `SELECT employees.first_name, employees.last_name FROM employees ORDER BY id`, rowsAsArray: true });
-  let employeeList = employeeRows.map(el => el.join(' '));
-  const [roleRows] = await db.promise().execute(`SELECT roles.title FROM roles ORDER BY id`);
-  let roleList = roleRows.map(el => el.title);
+  const roleList = await Role.getList();
+  const employeeList = await Employee.getList('name');
   return inquirer
     .prompt([
       {
@@ -199,30 +98,15 @@ const addEmployee = async () => {
         choices: employeeList,
       },
     ])
-    .then(({ first_name, last_name, role, manager }) => {
-      const role_id = roleList.indexOf(role) + 1;
-      console.log(role_id);
-
-      const sql = `INSERT INTO employees(first_name,last_name,role_id,manager) VALUES (?,?,?,?)`;
-      return db
-        .promise()
-        .execute(sql, [first_name, last_name, role_id, manager])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log('Added new employee to database!');
-          }
-        });
+    .then(async ({ first_name, last_name, role, manager }) => {
+      const role_id = await Role.getId(role);
+      await Employee.addEmployee(first_name, last_name, role_id, manager);
     });
 };
 
 const updateRole = async () => {
-  const [employeeRows] = await db.promise().execute({ sql: `SELECT first_name, last_name,id FROM employees ORDER BY id`, rowsAsArray: true });
-
-  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
-
-  const [roleRows] = await db.promise().execute(`SELECT roles.title FROM roles ORDER BY id`);
-  let roleList = roleRows.map(el => el.title);
-
+  const employeeList = await Employee.getList('id');
+  const roleList = await Role.getList();
   return inquirer
     .prompt([
       {
@@ -240,29 +124,18 @@ const updateRole = async () => {
     ])
     .then(async ({ employee, role }) => {
       const employee_id = employee.split(':')[1].replace(')', '');
-      const [[{ id: role_id }]] = await db.promise().execute(`SELECT id FROM roles WHERE title=?`, [role]);
-      const sql = `Update employees SET role_id=? WHERE id=?`;
-      return db
-        .promise()
-        .execute(sql, [role_id, employee_id])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log(`Updated ${employee}'s role to ${role}!`);
-          }
-        });
+      await Employee.updateRole(employee_id, role);
     });
 };
 
 const updateManager = async () => {
-  const [employeeRows] = await db.promise().execute({ sql: `SELECT first_name, last_name,id FROM employees ORDER BY id`, rowsAsArray: true });
-  let employeeList = employeeRows.map(el => `${el[0]} ${el[1]} (ID:${el[2]})`);
-
+  const employeeList = await Employee.getList('id');
   return inquirer
     .prompt([
       {
         type: 'list',
         name: 'employee',
-        message: `Which employee's manager do you want to update?`,
+        message: `Which employee do you want to update?`,
         choices: employeeList,
       },
       {
@@ -274,21 +147,13 @@ const updateManager = async () => {
     ])
     .then(async ({ employee, manager }) => {
       const employee_id = employee.split(':')[1].replace(')', '');
-      const employee_name = employee.split('(')[0].trim();
-      const manager_name = manager.split('(')[0].trim();
-      const sql = `Update employees SET manager=? WHERE id=?`;
-      return db
-        .promise()
-        .execute(sql, [manager_name, employee_id])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log(`Updated ${employee_name}'s manager to ${manager_name} !`);
-          }
-        });
+      manager = manager.split('(')[0].trim();
+      console.log(employee_id);
+
+      await Employee.updateManager(employee_id, manager);
     });
 };
 
-updateManager();
 module.exports = {
   viewEmployees,
   viewByDepartment,

@@ -4,7 +4,7 @@ VALUES
     ('develop'),
     ('engineering');
 
-INSERT IGNORE INTO roles(title, salary, department_id)
+INSERT IGNORE INTO roles(name, salary, department_id)
 VALUES
     ('accountant', '10000', '1'),
     ('engineer', '12000', '2'),

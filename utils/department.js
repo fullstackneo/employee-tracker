@@ -1,45 +1,12 @@
-const db = require('../db/connection');
 const inquirer = require('inquirer');
+const Department = require('../lib/Department');
 
-const viewDepartments = () => {
-  const sql = `
-          SELECT
-            departments.id AS department_id,
-            departments.name AS department
-          FROM
-            departments
-          ORDER BY
-            id`;
-  return db
-    .promise()
-    .execute(sql)
-    .then(([rows, fields]) => {
-      console.table(rows);
-    });
+const viewDepartments = async () => {
+  await Department.printList();
 };
 
 const totalBudget = async () => {
-  const [salaryRows] = await db.promise().execute({
-    sql: `
-    SELECT
-      count(roles.salary),
-      roles.salary
-    FROM
-     employees
-    LEFT JOIN 
-      roles 
-    ON 
-      employees.role_id = roles.id
-    WHERE
-      role_id IS NOT NULL
-    GROUP BY
-      salary    
-    `,
-    rowsAsArray: true,
-  });
-  let salaryList = salaryRows.map(el => el[0] * el[1]);
-  let totalBudget = 0;
-  salaryList.forEach(el => (totalBudget += el));
+  const totalBudget = Department.totalBudget();
   console.log(`Total budget is ${totalBudget}`);
 };
 
@@ -60,22 +27,11 @@ const addDepartment = () => {
         },
       },
     ])
-    .then(({ department }) => {
-      const sql = `INSERT IGNORE INTO departments(name) VALUES (?)`;
-      return db
-        .promise()
-        .execute(sql, [department])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log('Added new department to database!');
-          }
-        });
-    });
+    .then(({ department }) => Department.add(department));
 };
+
 const removeDepartment = async () => {
-  const [rows] = await db.promise().execute(`SELECT departments.name FROM departments ORDER BY id`);
-  const departmentList = rows.map(el => el.name);
-  const sql = `DELETE FROM departments WHERE name=?`;
+  const departmentList = await Department.getList();
   return inquirer
     .prompt([
       {
@@ -85,15 +41,7 @@ const removeDepartment = async () => {
         choices: departmentList,
       },
     ])
-    .then(({ department }) => {
-      db.promise()
-        .execute(sql, [department])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log(`Removed ${department} from database!`);
-          }
-        });
-    });
+    .then(({ department }) => Department.remove(department));
 };
 
 module.exports = {

@@ -1,30 +1,14 @@
-const db = require('../db/connection');
+
 const inquirer = require('inquirer');
+const Role = require('../lib/Role');
+const Department = require('../lib/Department');
 
-const viewRoles = () => {
-  const sql = `
-  SELECT
-    roles.title,
-    roles.id AS role_id,
-    roles.salary,
-    departments.name AS department
-  FROM
-    roles
-  LEFT JOIN
-    departments ON roles.department_id = departments.id`;
-
-  return db
-    .promise()
-    .execute(sql)
-    .then(([rows, fields]) => {
-      console.table(rows);
-    });
+const viewRoles = async () => {
+  await printRoles();
 };
 
 const addRole = async () => {
-  const [rows] = await db.promise().execute(`SELECT departments.name FROM departments ORDER BY id`);
-  const departmentList = rows.map(el => el.name);
-
+  const departmentList = await Department.getList();
   return inquirer
     .prompt([
       {
@@ -60,24 +44,11 @@ const addRole = async () => {
         choices: departmentList,
       },
     ])
-    .then(({ role, salary, department }) => {
-      const department_id = departmentList.indexOf(department) + 1;
-      const sql = `INSERT IGNORE INTO roles(title,salary,department_id) VALUES (?,?,?)`;
-      return db
-        .promise()
-        .execute(sql, [role, salary, department_id])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log('Added new role to database!');
-          }
-        });
-    });
+    .then(({ role, salary, department }) => Role.add(role, salary, department));
 };
 
 const removeRole = async () => {
-  const [roleRows] = await db.promise().execute({ sql: `SELECT title FROM roles ORDER BY id`, rowsAsArray: true });
-  const roleList = roleRows.map(el => el[0]);
-  const sql = `DELETE FROM roles WHERE title=?`;
+  const roleList = await Role.getList();
   return inquirer
     .prompt([
       {
@@ -87,18 +58,9 @@ const removeRole = async () => {
         choices: roleList,
       },
     ])
-    .then(({ role }) => {
-      db.promise()
-        .execute(sql, [role])
-        .then(([result]) => {
-          if (result.affectedRows === 1) {
-            console.log(`Removed ${role} from database!`);
-          }
-        });
-    });
+    .then(({ role }) => Role.remove(role));
 };
 
-removeRole();
 module.exports = {
   viewRoles,
   addRole,
