@@ -155,8 +155,6 @@ const updateManager = async () => {
     .then(async ({ employee, manager }) => {
       const employee_id = employee.split(':')[1].replace(')', '');
       manager = manager.split('(')[0].trim();
-      console.log(employee_id);
-
       await Employee.updateManager(employee_id, manager);
     });
 };

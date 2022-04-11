@@ -2,11 +2,11 @@
 
 ## Purpose
 
-- To create a employee-tracker for company to track info of departments/roles/employees.
+- To create a employee-tracker for company to track info of departments/roles/employees so that the company can organize and plan its business.
 
 ## Demo
 
-
+[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://youtu.be/vt5fpE0bzSY)
 
 ## Link
 
@@ -15,6 +15,7 @@
 ## Skills
 
 - Javascript
+- Node.js
 - Mysql
 - Inquirer
 - Code Refactoring
